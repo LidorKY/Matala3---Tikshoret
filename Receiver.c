@@ -7,6 +7,8 @@
 #include "stdlib.h"
 #include "unistd.h"
 #include "netinet/in.h"
+#include "netinet/tcp.h"
+#include <time.h>
 #define SIZE 1048576*2
 #define xor "1100010100100100" 
 
@@ -62,7 +64,13 @@ int write_file2(int socket,char *data){// func that allows us to write in files
 
 int main(){
    char Receiver_massege[33] = xor;
-    
+   clock_t start,end;
+   double cpu_time_used;
+   double Time1[50];
+   int time_counter1 = 0;
+   double Time2[50];
+   int time_counter2 = 0;
+
     int receiver_socket;
     receiver_socket = socket(AF_INET,SOCK_STREAM,0);
     if(receiver_socket==-1){
@@ -92,19 +100,62 @@ int main(){
     int client_socket;
     socklen_t addr_size=sizeof(new_addr);
     client_socket= accept(receiver_socket,(struct sockaddr*)&new_addr, &addr_size);
+    
     char data[SIZE];
+    while(1){
+        start = clock();
+        write_file1(client_socket,data);
+        end = clock();
+        cpu_time_used = ((double)(end-start))/CLOCKS_PER_SEC;
+        Time1[time_counter1] = cpu_time_used;
+        time_counter1++;
 
-    write_file1(client_socket,data);
-    printf("-writing data in the txt file (first).\n");
-
+        printf("-writing data in the txt file (first).\n");
+    
     //if(we got all the bytes)
-    printf("amount of bit sended by send is %ld.\n",send(client_socket, Receiver_massege,sizeof(Receiver_massege),0));
+        printf("amount of bit sended by send is %ld.\n",send(client_socket, Receiver_massege,sizeof(Receiver_massege),0));
+        char *Reno = "reno";
+        socklen_t Reno_len = strlen(Reno);
+            if (setsockopt(client_socket, IPPROTO_TCP,TCP_CONGESTION,Reno,Reno_len) != 0)//the change in CC from Cubic to Reno
+            {
+                perror("setsockopt");
+                exit(1);
+            }
+            else{
+                printf("-CC has changed.\n");
+            }
+        start = clock();
+        write_file2(client_socket,data);
+        end = clock();
+        cpu_time_used = ((double)(end-start))/CLOCKS_PER_SEC;
+        Time2[time_counter2] = cpu_time_used;
+        time_counter2++;
+        printf("-writing data in the txt file (second).\n");
 
-    write_file2(client_socket,data);
-    printf("-writing data in the txt file (second).\n");
+        char end[9] = {0};  
+        if(recv(client_socket,end, sizeof(end),0) == 0){
+            double avg1 = 0, avg2 = 0;
+            printf("printing the Time array");
+            for(int i = 0; i < time_counter1; i++){
+                printf("Time1[%f].\n",Time1[i]);
+                    avg1 = avg1 + Time1[i];
+            }
+            printf("the average time for receiving the first half is: %f\n", avg1/time_counter1);
+            for(int i = 0; i < time_counter2; i++){
+                printf("Time2[%f].\n",Time2[i]);
+                    avg2 = avg2 + Time2[i];
+            }
+            printf("the average time for receiving the second half is: %f\n", avg2/time_counter2);
+            close(receiver_socket);
+            printf("-closing..\n");
+            break;
+        }
+        else{
+           printf("we continue\n");
+           bzero(end,sizeof(end));
+        }  
 
-    close(receiver_socket);
-    printf("-closing..\n");
+    }
 
 return 0;
 }
