@@ -15,7 +15,6 @@
 int write_file1(int socket,char *data){// func that allows us to write in files
     FILE *f;
     char *filename= "Receiver_massege.txt";
-
     f = fopen(filename,"w");
     if(f==NULL){
         perror("-Creating file error");
@@ -24,15 +23,22 @@ int write_file1(int socket,char *data){// func that allows us to write in files
     size_t size=0;
     size_t sum=0;
     while(sum<SIZE/2){
-        if((size=recv(socket,data,SIZE/2,0))<=0)
+        size=recv(socket,data,SIZE/2,0);
+        if(size == -1)
         {
-            break;
+            perror("error in write file 1");
+            exit(1);
         }
+        else if(size == 0){
+            return 1;
+        }
+        else{}
+
         sum=sum+size;
         fprintf(f,"%s",data);
     }
-        bzero(data, SIZE/2);//like memset- delete the first n characters in thr String.
-        printf("sum=%ld\n",sum);
+    bzero(data, SIZE/2);//like memset- delete the first n characters in thr String.
+    printf("sum=%ld\n",sum);
 
     return 0;
 }
@@ -63,14 +69,14 @@ int write_file2(int socket,char *data){// func that allows us to write in files
 }
 
 int main(){
-   char Receiver_massege[33] = xor;
-   clock_t start,end;
-   double cpu_time_used;
-   double Time1[50];
-   int time_counter1 = 0;
-   double Time2[50];
-   int time_counter2 = 0;
-
+    char Receiver_massege[33] = xor;
+    clock_t start,end;
+    double cpu_time_used;
+    double Time1[50];
+    int time_counter1 = 0;
+    double Time2[50];
+    int time_counter2 = 0;
+    
     int receiver_socket;
     receiver_socket = socket(AF_INET,SOCK_STREAM,0);
     if(receiver_socket==-1){
@@ -103,13 +109,30 @@ int main(){
     
     char data[SIZE];
     while(1){
+        printf("!start of loop!\n");
         start = clock();
-        write_file1(client_socket,data);
+        if(write_file1(client_socket,data) == 1){
+            double avg1 = 0, avg2 = 0;
+            printf("printing the Time array - 1.\n");
+            for(int i = 0; i < time_counter1; i++){
+                printf("Time1[%f].\n",Time1[i]);
+                    avg1 = avg1 + Time1[i];
+            }
+            printf("the average time for receiving the first half is: %f\n\n", avg1/time_counter1);
+            printf("printing the Time array - 2.\n");
+            for(int i = 0; i < time_counter2; i++){
+                printf("Time2[%f].\n",Time2[i]);
+                    avg2 = avg2 + Time2[i];
+            }
+            printf("the average time for receiving the second half is: %f\n", avg2/time_counter2);
+            close(client_socket);
+            printf("-closing..\n");
+            return 0;
+        }
         end = clock();
         cpu_time_used = ((double)(end-start))/CLOCKS_PER_SEC;
         Time1[time_counter1] = cpu_time_used;
         time_counter1++;
-
         printf("-writing data in the txt file (first).\n");
     
     //if(we got all the bytes)
@@ -131,29 +154,6 @@ int main(){
         Time2[time_counter2] = cpu_time_used;
         time_counter2++;
         printf("-writing data in the txt file (second).\n");
-
-        char end[9] = {0};  
-        if(recv(client_socket,end, sizeof(end),0) == 0){
-            double avg1 = 0, avg2 = 0;
-            printf("printing the Time array");
-            for(int i = 0; i < time_counter1; i++){
-                printf("Time1[%f].\n",Time1[i]);
-                    avg1 = avg1 + Time1[i];
-            }
-            printf("the average time for receiving the first half is: %f\n", avg1/time_counter1);
-            for(int i = 0; i < time_counter2; i++){
-                printf("Time2[%f].\n",Time2[i]);
-                    avg2 = avg2 + Time2[i];
-            }
-            printf("the average time for receiving the second half is: %f\n", avg2/time_counter2);
-            close(receiver_socket);
-            printf("-closing..\n");
-            break;
-        }
-        else{
-           printf("we continue\n");
-           bzero(end,sizeof(end));
-        }  
 
     }
 

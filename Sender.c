@@ -17,6 +17,7 @@
                                      // 1100 0101 0010 0100
 
     int send_file(char *data, int sender_socket){
+        printf("----------in send_file-----------\n");
         size_t a;
         if((a=send(sender_socket,data,SIZE/2,0))==-1){
         perror("error in sending data.\n");
@@ -24,10 +25,12 @@
         }
         bzero(data,SIZE/2);
         printf("a=%ld\n",a);
+         printf("----------out send_file-----------\n");
         return 0;
     }
 
     int send_file2(char *data, int sender_socket){
+         printf("----------in send_file2-----------\n");
         size_t b;
         if((b=send(sender_socket,&data[SIZE/2],SIZE/2,0))==-1){
         perror("error in sending data.\n");
@@ -35,6 +38,7 @@
         }
         bzero(data,SIZE/2);
         printf("b=%ld\n",b);
+         printf("----------out send_file-----------\n");
         return 0;
     }
 
@@ -75,8 +79,8 @@ if(fp==NULL){
 char data [SIZE]={0};//mooving text into array
 printf("fread = %ld\n",fread(data,sizeof(char),SIZE,fp));
 
-char decision='1';
-while(decision!='0'){
+int decision=1;
+while(decision!=0){
 
     if(send_file(data,sender_socket)==0){
     printf("-File data has been send successfully1.\n");
@@ -84,7 +88,7 @@ while(decision!='0'){
     char server_response[33];
     recv(sender_socket,&server_response, sizeof(server_response),0);
     printf("The server sent the data: %s .\n", server_response);
-    if(!strcmp(xor,server_response))
+    if(!strcmp(xor,server_response))//if the Receiver send the right authoratative
     {
         char *Reno = "reno";
         socklen_t Reno_len = strlen(Reno);
@@ -105,32 +109,12 @@ while(decision!='0'){
         exit(1);
     }
 bzero(server_response,33);
-//printf("1 or 0\n");
-//decision= (int)getchar();
-//scanf("1 or 0 %d\n",&decision);
-//printf("%d\n",decision);
-decision = getchar();
-if(decision=='0'){//we don't want to keep sending the file again. 
-    /*
-    int check;
-    char* end = "bye bye";
-    if((check=send(sender_socket,end,sizeof(end),0))==-1){
-        perror("error in sending end.\n");
-        exit(1);
-        }
-    */
+scanf("%d",&decision);
+if(decision==0){//we don't want to keep sending the file again. 
     close(sender_socket);
     printf("-closing...\n");
     break;
 }
-//printf("%c\n",decision);
-else{//want to continue.
-    int check;
-    char* notend = "continue";
-    if((check=send(sender_socket,notend,sizeof(notend),0))==-1){
-        perror("error in sending end.\n");
-        exit(1);
-        }
 
 char *Cubic = "cubic";
 socklen_t Cubic_len = strlen(Cubic);
@@ -142,10 +126,8 @@ if (setsockopt(sender_socket, IPPROTO_TCP,TCP_CONGESTION,Cubic,Cubic_len) != 0)/
 else{
             printf("-CC has changed Reno -> Cubic.\n");
         }
-}
 
 }
-//close(sender_socket);
 
 return 0;
 }
