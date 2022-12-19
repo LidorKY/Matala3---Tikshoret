@@ -62,8 +62,8 @@ int write_file2(int socket,char *data){// func that allows us to write in files
         sum=sum+size;
         fprintf(f,"%s",&data[SIZE/2]);
     }
-        bzero(data, SIZE);//like memset- delete the first n characters in thr String.
-        printf("sum=%ld\n",sum);
+    bzero(data, SIZE);//like memset- delete the first n characters in thr String.
+    printf("sum=%ld\n",sum);
 
     return 0;
 }
@@ -81,8 +81,9 @@ int main(){
     receiver_socket = socket(AF_INET,SOCK_STREAM,0);
     if(receiver_socket==-1){
         printf("-there is a problem with initializing receiver\n");
-    }else{
-    printf("-initialize successfully.\n");
+    }
+    else{
+        printf("-initialize successfully.\n");
     }
     struct sockaddr_in Sender_address,new_addr;
     Sender_address.sin_family=AF_INET;
@@ -94,7 +95,7 @@ int main(){
         printf("-there is a problem with bindding.\n");
     }
     else{
-    printf("-bindding successfully.\n");
+        printf("-bindding successfully.\n");
     }
     int sock_queue =listen(receiver_socket,2);
     if(sock_queue==-1){
@@ -109,20 +110,19 @@ int main(){
     
     char data[SIZE];
     while(1){
-        printf("!start of loop!\n");
         start = clock();
         if(write_file1(client_socket,data) == 1){
             double avg1 = 0, avg2 = 0;
             printf("printing the Time array - 1.\n");
             for(int i = 0; i < time_counter1; i++){
                 printf("Time1[%f].\n",Time1[i]);
-                    avg1 = avg1 + Time1[i];
+                avg1 = avg1 + Time1[i];
             }
             printf("the average time for receiving the first half is: %f\n\n", avg1/time_counter1);
             printf("printing the Time array - 2.\n");
             for(int i = 0; i < time_counter2; i++){
                 printf("Time2[%f].\n",Time2[i]);
-                    avg2 = avg2 + Time2[i];
+                avg2 = avg2 + Time2[i];
             }
             printf("the average time for receiving the second half is: %f\n", avg2/time_counter2);
             close(client_socket);

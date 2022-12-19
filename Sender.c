@@ -16,29 +16,25 @@
                                      //----------------------
                                      // 1100 0101 0010 0100
 
-    int send_file(char *data, int sender_socket){
-        printf("----------in send_file-----------\n");
+    int send_file(char *data, int sender_socket){//a func that we send the file to the sender.
         size_t a;
-        if((a=send(sender_socket,data,SIZE/2,0))==-1){
-        perror("error in sending data.\n");
-        exit(1);
+        if((a=send(sender_socket,data,SIZE/2,0))==-1){//if send returned -1 there is an error.
+            perror("error in sending data.\n");
+            exit(1);
         }
-        bzero(data,SIZE/2);
-        printf("a=%ld\n",a);
-         printf("----------out send_file-----------\n");
+        bzero(data,SIZE/2);//like memset, it deletes the first SIZE/2 bits
+        printf("The amount of bit we send (first half) = %ld\n",a);
         return 0;
     }
 
-    int send_file2(char *data, int sender_socket){
-         printf("----------in send_file2-----------\n");
+    int send_file2(char *data, int sender_socket){//same as the send_file1 function
         size_t b;
         if((b=send(sender_socket,&data[SIZE/2],SIZE/2,0))==-1){
-        perror("error in sending data.\n");
-        exit(1);
+            perror("error in sending data.\n");
+            exit(1);
         }
         bzero(data,SIZE/2);
-        printf("b=%ld\n",b);
-         printf("----------out send_file-----------\n");
+        printf("The amount of bit we send (second half) = %ld\n",b);
         return 0;
     }
 
@@ -54,80 +50,80 @@ int main(){
         printf("-initialize successfully.\n");
     }
 
-struct sockaddr_in Receiver_address;
-FILE *fp;
-char *filename ="Sender_massege.txt";
+    struct sockaddr_in Receiver_address;//initialize where to send
+    FILE *fp;
+    char *filename ="Sender_massege.txt";//the file we want to send
 
-Receiver_address.sin_family = AF_INET;
-Receiver_address.sin_port = htons(9999);
-Receiver_address.sin_addr.s_addr = INADDR_ANY;
+    Receiver_address.sin_family = AF_INET;// setting for IPV4
+    Receiver_address.sin_port = htons(9999);//port is 9999
+    Receiver_address.sin_addr.s_addr = INADDR_ANY;//listening to all (like 0.0.0.0)
 
-int connection_status = connect(sender_socket,(struct sockaddr *) &Receiver_address,sizeof(Receiver_address));
-if(connection_status==-1){
-    printf("there is an error with the connection.\n");
-}
-else{
-printf("-connected.\n");
-}
-
-fp = fopen(filename, "r");
-if(fp==NULL){
-    perror("Error in reading file.");
-    exit(1);
-}
-
-char data [SIZE]={0};//mooving text into array
-printf("fread = %ld\n",fread(data,sizeof(char),SIZE,fp));
-
-int decision=1;
-while(decision!=0){
-
-    if(send_file(data,sender_socket)==0){
-    printf("-File data has been send successfully1.\n");
+    int connection_status = connect(sender_socket,(struct sockaddr *) &Receiver_address,sizeof(Receiver_address));
+    if(connection_status==-1){
+        printf("there is an error with the connection.\n");
     }
-    char server_response[33];
-    recv(sender_socket,&server_response, sizeof(server_response),0);
-    printf("The server sent the data: %s .\n", server_response);
-    if(!strcmp(xor,server_response))//if the Receiver send the right authoratative
-    {
-        char *Reno = "reno";
-        socklen_t Reno_len = strlen(Reno);
-        if (setsockopt(sender_socket, IPPROTO_TCP,TCP_CONGESTION,Reno,Reno_len) != 0)//the change in CC from Cubic to Reno
+    else{
+        printf("-connected.\n");
+    }
+
+    fp = fopen(filename, "r");
+    if(fp==NULL){
+        perror("Error in reading file.");
+        exit(1);
+    }
+
+    char data [SIZE]={0};//moving text into array
+    printf("fread = %ld\n",fread(data,sizeof(char),SIZE,fp));
+
+    int decision=1;
+    while(decision!=0){
+
+        if(send_file(data,sender_socket)==0){
+            printf("-File data has been send successfully1.\n");
+        }
+        char server_response[33];
+        recv(sender_socket,&server_response, sizeof(server_response),0);
+        printf("The server sent the data: %s .\n", server_response);
+        if(!strcmp(xor,server_response))//if the Receiver send the right authoratative
+        {
+            char *Reno = "reno";
+            socklen_t Reno_len = strlen(Reno);
+            if (setsockopt(sender_socket, IPPROTO_TCP,TCP_CONGESTION,Reno,Reno_len) != 0)//the change in CC from Cubic to Reno
+            {
+                perror("setsockopt");
+                exit(1);
+            }
+            else{
+                printf("-CC has changed Cubic -> Reno.\n");
+            }
+            if(send_file2(data,sender_socket)==0){
+             printf("-File data has been send successfully2.\n");
+            }
+        }
+        else{
+            perror("-The xor didn't make it.\n");
+            exit(1);
+        }
+        bzero(server_response,33);
+        scanf("%d",&decision);
+        if(decision==0){//we don't want to keep sending the file again. 
+            close(sender_socket);
+            printf("-closing...\n");
+            break;
+        }
+
+        char *Cubic = "cubic";
+        socklen_t Cubic_len = strlen(Cubic);
+        if (setsockopt(sender_socket, IPPROTO_TCP,TCP_CONGESTION,Cubic,Cubic_len) != 0)//the change in CC from Reno to Cubic
         {
             perror("setsockopt");
             exit(1);
         }
         else{
-            printf("-CC has changed Cubic -> Reno.\n");
-        }
-        if(send_file2(data,sender_socket)==0){
-            printf("-File data has been send successfully2.\n");
-        }
-    }
-    else{
-        perror("-The xor didn't make it.\n");
-        exit(1);
-    }
-bzero(server_response,33);
-scanf("%d",&decision);
-if(decision==0){//we don't want to keep sending the file again. 
-    close(sender_socket);
-    printf("-closing...\n");
-    break;
-}
-
-char *Cubic = "cubic";
-socklen_t Cubic_len = strlen(Cubic);
-if (setsockopt(sender_socket, IPPROTO_TCP,TCP_CONGESTION,Cubic,Cubic_len) != 0)//the change in CC from Reno to Cubic
-        {
-            perror("setsockopt");
-            exit(1);
-        }
-else{
             printf("-CC has changed Reno -> Cubic.\n");
         }
 
-}
+    }
 
-return 0;
+    return 0;
 }
