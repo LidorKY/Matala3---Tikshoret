@@ -49,7 +49,8 @@ int main(){
     else{
         printf("-initialize successfully.\n");
     }
-
+//--------------------------------------------------------------------------------
+//initialize where to send
     struct sockaddr_in Receiver_address;//initialize where to send
     FILE *fp;
     char *filename ="Sender_massege.txt";//the file we want to send
@@ -57,7 +58,8 @@ int main(){
     Receiver_address.sin_family = AF_INET;// setting for IPV4
     Receiver_address.sin_port = htons(9999);//port is 9999
     Receiver_address.sin_addr.s_addr = INADDR_ANY;//listening to all (like 0.0.0.0)
-
+//---------------------------------------------------------------------------------
+//connecting the Sender and Receiver
     int connection_status = connect(sender_socket,(struct sockaddr *) &Receiver_address,sizeof(Receiver_address));
     if(connection_status==-1){
         printf("there is an error with the connection.\n");
@@ -65,30 +67,30 @@ int main(){
     else{
         printf("-connected.\n");
     }
-
-    fp = fopen(filename, "r");
-    if(fp==NULL){
-        perror("Error in reading file.");
+//---------------------------------------------------------------------------------
+    fp = fopen(filename, "r");//fopen with those pramaters allows us to accese the file we want with permition to read only.
+    if(fp==NULL){//if we didn't read the file right.
+        perror("Error in reading file.");//then error.
         exit(1);
     }
 
-    char data [SIZE]={0};//moving text into array
-    printf("fread = %ld\n",fread(data,sizeof(char),SIZE,fp));
+    char data [SIZE]={0};//The array we want to copy the file into and then send to the receiver.
+    printf("fread = %ld\n",fread(data,sizeof(char),SIZE,fp));//copying the file into the array.
 
-    int decision=1;
-    while(decision!=0){
+    int decision=1;//the condition for the loop.
+    while(decision!=0){//start of loop.
 
-        if(send_file(data,sender_socket)==0){
+        if(send_file(data,sender_socket)==0){//sendind the first half to the Receiver.
             printf("-File data has been send successfully1.\n");
         }
         char server_response[33];
-        recv(sender_socket,&server_response, sizeof(server_response),0);
+        recv(sender_socket,&server_response, sizeof(server_response),0);//getting the authoratative from the Receiver.
         printf("The server sent the data: %s .\n", server_response);
-        if(!strcmp(xor,server_response))//if the Receiver send the right authoratative
+        if(!strcmp(xor,server_response))//if the Receiver send the right authoratative.
         {
-            char *Reno = "reno";
+            char *Reno = "reno";//type of CC.
             socklen_t Reno_len = strlen(Reno);
-            if (setsockopt(sender_socket, IPPROTO_TCP,TCP_CONGESTION,Reno,Reno_len) != 0)//the change in CC from Cubic to Reno
+            if (setsockopt(sender_socket, IPPROTO_TCP,TCP_CONGESTION,Reno,Reno_len) != 0)//the change in CC from Cubic to Reno.
             {
                 perror("setsockopt");
                 exit(1);
@@ -96,15 +98,15 @@ int main(){
             else{
                 printf("-CC has changed Cubic -> Reno.\n");
             }
-            if(send_file2(data,sender_socket)==0){
+            if(send_file2(data,sender_socket)==0){//sendind the second half to the Receiver.
              printf("-File data has been send successfully2.\n");
             }
         }
-        else{
+        else{//if the xor we got doesnt match, it means that somthing is wrong with the firdt half.
             perror("-The xor didn't make it.\n");
             exit(1);
         }
-        bzero(server_response,33);
+        bzero(server_response,33);//like memset it deletes the first 33 bits from server_response.
         scanf("%d",&decision);
         if(decision==0){//we don't want to keep sending the file again. 
             close(sender_socket);
@@ -112,7 +114,7 @@ int main(){
             break;
         }
 
-        char *Cubic = "cubic";
+        char *Cubic = "cubic";//type of CC.
         socklen_t Cubic_len = strlen(Cubic);
         if (setsockopt(sender_socket, IPPROTO_TCP,TCP_CONGESTION,Cubic,Cubic_len) != 0)//the change in CC from Reno to Cubic
         {
